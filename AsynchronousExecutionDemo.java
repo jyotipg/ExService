@@ -9,61 +9,75 @@ public class AsynchronousExecutionDemo {
     public static String startCase(String procedureName, String caseDescription, String dstInParam) {
         ExecutorService executorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
         CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<String> threadFuture = new CompletableFuture<>();
           CompletableFuture.supplyAsync(() -> {
-                        return ITXStaffwareHandler.getInstance().startCase(procedureName, caseDescription, dstInParam);
+                    startedThreadFutue("startCase",threadFuture);
+                    return ITXStaffwareHandler.getInstance().startCase(procedureName, caseDescription, dstInParam,Thread.currentThread().getName());
                 }, executorService)
                 .whenComplete((response, error) -> {
                     printMessageOrException(error, response, executorService,future);
         });
-        return printMessageOrException(future);
+        return printMessageOrException(future,threadFuture);
     }
 
 
     public static String triggerCase(long caseNumber, String procedureName, String stepName, String dstxInParam) {
         ExecutorService executorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
         CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<String> threadFuture = new CompletableFuture<>();
         CompletableFuture.supplyAsync(() -> {
-                        return ITXStaffwareHandler.getInstance().triggerCase(caseNumber, procedureName, stepName, dstxInParam);
+                    startedThreadFutue("trigger Case",threadFuture);
+                        return ITXStaffwareHandler.getInstance().triggerCase(caseNumber, procedureName, stepName, dstxInParam,Thread.currentThread().getName());
                 }, executorService)
                 .whenComplete((response, error) -> {
                     printMessageOrException(error, response, executorService,future);
                 });
-        return printMessageOrException(future);
+        return printMessageOrException(future,threadFuture);
     }
 
     public static String findExistingCases(String procedureName, String filter) {
         ExecutorService executorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
         CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<String> threadFuture = new CompletableFuture<>();
         CompletableFuture.supplyAsync(() -> {
-                        return ITXStaffwareHandler.getInstance().findExistingCases(procedureName, filter);
+                    startedThreadFutue("find Existing Cases",threadFuture);
+                        return ITXStaffwareHandler.getInstance().findExistingCases(procedureName, filter,Thread.currentThread().getName());
 
                 }, executorService)
                 .whenComplete((response, error) -> {
                     printMessageOrException(error, response, executorService,future);
                 });
-        return printMessageOrException(future);
+        return printMessageOrException(future,threadFuture);
 
     }
 
+    private static void startedThreadFutue( String processName , CompletableFuture<String> threadFuture) {
 
-    private static CompletableFuture<String> printMessageOrException(Throwable error, String response, ExecutorService executorService, CompletableFuture<String> future) {
+        String activeThreadName=Thread.currentThread().getName();
+        System.out.println("Start Case Method is called "+activeThreadName);
+        threadFuture.complete(activeThreadName);
+
+    }
+    private static void printMessageOrException(Throwable error, String response, ExecutorService executorService, CompletableFuture<String> future) {
         executorService.shutdownNow();
         if (error == null) {
             future.complete(response);
         } else {
             future.completeExceptionally(error);
         }
-        return future;
     }
 
-    public static String printMessageOrException(CompletableFuture<String> future)
+    public static String printMessageOrException(CompletableFuture<String> future,CompletableFuture<String> threadFuture)
     {
         String result="";
+        String actithread="";
         try {
             result = future.get();
+            actithread=threadFuture.get();
         } catch (InterruptedException | ExecutionException e) {
             System.out.println("Exception while getting the result of the future. " + e.getMessage());
         }
+        System.out.println("Thread "+actithread+"Successfully completed printing result below \n");
         return result;
     }
     public static void close()throws Exception{
@@ -105,10 +119,14 @@ public class AsynchronousExecutionDemo {
 
     public static void main(String[] args) {
         long start=System.currentTimeMillis();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 2; i++) {
+            System.out.println("============================================================================================\n\n");
             System.out.println( startCase("procedureName", "caseDescription", "dstInParam"));
+            System.out.println("============================================================================================\n\n");
              System.out.println( triggerCase(1L, "procedureName", "caseDescription", "dstInParam"));
+            System.out.println("============================================================================================\n\n");
              System.out.println( findExistingCases("procedureName", "filter"));
+            System.out.println("============================================================================================\n\n");
         }
 
         long end=System.currentTimeMillis();
